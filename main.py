@@ -13,7 +13,7 @@ class Player:
         self.name = ""
         self.coords = ""
 
-        self.visible = True
+        self.is_visible = True
         self.time_since_visible = 0
 
 
@@ -28,33 +28,42 @@ class Main:
     def __init__(self, my_name):
         self.my_name = my_name
 
-        self.active_players = {}
-        self.logged_players = []
+        self.recent_players = {}  # Visible in short term
+        self.logged_players = []  # Visible at any point
 
-    def update_player_data(self) -> list:
+    def refresh_player_data(self) -> list:
+        self.visible_players = []  # Visible right now
 
         response = get(PLAYERS_ENDPOINT).json()
 
         for player in response["players"]:
+            self.visible_players.append(player["name"])
             if player["name"] not in self.logged_players:
                 self.logged_players.append(player["name"])
 
             coords = Coordinates(player["x"], player["y"], player["z"])
-            if player["name"] not in self.active_players:
+            if player["name"] not in self.recent_players:
                 new_player = Player()
                 new_player.name = player["name"]
                 new_player.coords = coords
 
-                self.active_players[player["name"]] = new_player
+                self.recent_players[player["name"]] = new_player
 
             else:
-                self.active_players[player["name"]].coords = coords
+                self.recent_players[player["name"]].coords = coords
+                self.recent_players[player["name"]].is_visible = True
+                self.recent_players[player["name"]].time_since_visible = 0
+
+        for player_name in self.logged_players:
+            if player_name not in self.visible_players:
+                self.recent_players[player_name].is_visible = False
+                self.recent_players[player_name].time_since_visible += refresh_delay
 
 
     # def calculate_player_seperation(self, player_1_name, player_2_name):
 
-    #     player_1 = self.active_players[player_1_name]
-    #     player_2 = self.active_players[player_2_name]
+    #     player_1 = self.recent_players[player_1_name]
+    #     player_2 = self.recent_players[player_2_name]
 
     #     x_distance = abs(player_2.coords.X - player_1.coords.X)
     #     z_distance = abs(player_2.coords.Z - player_1.coords.Z)
@@ -63,9 +72,11 @@ class Main:
 
     def run(self):
         while True:
-            self.update_player_data()
+            self.refresh_player_data()
 
             sleep(refresh_delay)
+
+
 
 
 main = Main(my_name="")
