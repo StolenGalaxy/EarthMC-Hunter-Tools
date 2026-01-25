@@ -4,8 +4,8 @@ from time import sleep
 PLAYERS_ENDPOINT = "https://map.earthmc.net/tiles/players.json"
 MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.json"
 
-refresh_delay = 5
-player_activity_timeout = 30
+refresh_delay = 3
+player_activity_timeout = 60
 
 
 class Player:
@@ -65,6 +65,15 @@ class Main:
                         self.recent_players.pop(player_name)
 
     def calculate_player_separation(self, player_1_name: str, player_2_name: str) -> int:
+        """Calculates the distance between two players based on their last known positions
+
+        Args:
+            player_1_name (str): Name of first player
+            player_2_name (str): Name of second player
+
+        Returns:
+            int: Distance between the two players
+        """
 
         # check players are recent
         if player_1_name in self.recent_players and player_2_name in self.recent_players:
@@ -77,6 +86,19 @@ class Main:
             separation = int((x_gap**2 + z_gap**2)**(1/2))
             return separation
 
+    def calculate_distance_to_player(self, target_player: str) -> int:
+        """calculate_player_separation() wrapper to find distance between specifically self to target player
+
+        Args:
+            target_player (str): Name of the player of whom to find distance between self to
+
+        Returns:
+            int: Distance between the two players
+        """
+        distance = self.calculate_player_separation(self.my_name, target_player)
+
+        return distance
+
     def run(self):
         while True:
             self.refresh_player_data()
@@ -88,6 +110,6 @@ class Main:
             sleep(refresh_delay)
 
 
-main = Main(my_name="")
+main = Main(my_name=input("Enter your player's name: "))
 
 main.run()
