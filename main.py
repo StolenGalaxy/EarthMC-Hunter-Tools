@@ -1,11 +1,14 @@
 from requests import get
 from time import sleep
 
+import matplotlib.pyplot as plt
+from matplotlib.collections import PolyCollection
+
 PLAYERS_ENDPOINT = "https://map.earthmc.net/tiles/players.json"
 MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.json"
 
 refresh_delay = 30
-player_activity_timeout = 60
+player_activity_timeout = 120
 
 
 class Player:
@@ -18,14 +21,14 @@ class Player:
 
 
 class Coordinates:
-    def __init__(self, X, Y, Z):
+    def __init__(self, X: int, Y: int, Z: int):
         self.X = X
         self.Y = Y
         self.Z = Z
 
 
 class Main:
-    def __init__(self, my_name):
+    def __init__(self, my_name: str):
         self.my_name = my_name
 
         self.recent_players = {}  # Visible in short term
@@ -69,7 +72,30 @@ class Main:
 
         towns = response[0]["markers"]
 
-        print(towns[0]["points"])
+        i = 0
+        map = []
+
+        for town in towns:
+            if "points" in str(town):
+                i += 1
+                print(i)
+
+                border_points = town["points"][0][0]
+
+                coordinates = []
+                for point in border_points:
+                    coordinate = [point["x"], point["z"] * -1]
+                    coordinates.append(coordinate)
+                map.append(coordinates)
+
+        fig, ax = plt.subplots()
+
+        collection = PolyCollection(map, facecolor="red", edgecolor="black")
+
+        ax.add_collection(collection)
+
+        ax.autoscale_view()
+        plt.show()
 
     def calculate_player_separation(self, player_1_name: str, player_2_name: str) -> int:
         """Calculates the distance between two players based on their last known positions
