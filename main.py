@@ -4,7 +4,7 @@ from time import sleep
 PLAYERS_ENDPOINT = "https://map.earthmc.net/tiles/players.json"
 MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.json"
 
-refresh_delay = 3
+refresh_delay = 30
 player_activity_timeout = 60
 
 
@@ -64,6 +64,13 @@ class Main:
                     if self.recent_players[player_name].time_since_visible > player_activity_timeout:
                         self.recent_players.pop(player_name)
 
+    def get_base_data(self):
+        response = get(MARKERS_ENDPOINT).json()
+
+        towns = response[0]["markers"]
+
+        print(towns[0]["points"])
+
     def calculate_player_separation(self, player_1_name: str, player_2_name: str) -> int:
         """Calculates the distance between two players based on their last known positions
 
@@ -102,14 +109,15 @@ class Main:
     def run(self):
         while True:
             self.refresh_player_data()
+            self.get_base_data()
 
-            print("-----------------------------\n\n")
-            print(f"Currently visible players: {len(self.visible_players)}\nRecently visible players: {len(self.recent_players)}\nAll known players: {len(self.logged_players)}")
-            print("\n\n-----------------------------")
+            #print("-----------------------------\n\n")
+            #print(f"Currently visible players: {len(self.visible_players)}\nRecently visible players: {len(self.recent_players)}\nAll known players: {len(self.logged_players)}")
+            #print("\n\n-----------------------------")
 
             sleep(refresh_delay)
 
 
-main = Main(my_name=input("Enter your player's name: "))
+main = Main(my_name="")
 
 main.run()
