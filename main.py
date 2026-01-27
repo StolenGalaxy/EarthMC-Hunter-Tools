@@ -7,6 +7,7 @@ from matplotlib.collections import PolyCollection
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
+from multiprocessing import Process
 
 PLAYERS_ENDPOINT = "https://map.earthmc.net/tiles/players.json"
 MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.json"
@@ -32,12 +33,34 @@ class Coordinates:
         self.Z = Z
 
 
+class Plotting:
+    def __init__(self):
+        print("init called")
+        self.already_plotted = False
+
+    def plot_map(self, map):
+            fig, ax = plt.subplots()
+
+            collection = PolyCollection(map, facecolor="red", edgecolor="black")
+
+            ax.add_collection(collection)
+
+            ax.autoscale_view()
+            if self.already_plotted:
+                print("closing all")
+                plt.close("all")
+            self.already_plotted = True
+            plt.show()
+
+
 class Main:
-    def __init__(self, my_name: str):
+    def __init__(self, my_name: str, plotter: Plotting):
         self.my_name = my_name
+
 
         self.recent_players = {}  # Visible in short term
         self.logged_players = []  # Visible at any point
+
 
     def refresh_player_data(self) -> list:
         self.visible_players = []  # Visible right now
@@ -73,6 +96,7 @@ class Main:
                         self.recent_players.pop(player_name)
 
     def get_base_data(self):
+        print("getting base data")
         response = get(MARKERS_ENDPOINT).json()
 
         towns = response[0]["markers"]
@@ -99,16 +123,13 @@ class Main:
 
                 map.append(visualisation_coords)
 
+        print("about to plot")
+        plot_process = Process(target=self.plotter.plot_map, args=(map, ))
+        plot_process.start()
+        print("completed plot")
 
-        # Displaying map
-        # fig, ax = plt.subplots()
 
-        # collection = PolyCollection(map, facecolor="red", edgecolor="black")
 
-        # ax.add_collection(collection)
-
-        # ax.autoscale_view()
-        #plt.show()
 
     def get_player_visibility_status(self, player_name):
         if player_name in self.visible_players:
@@ -161,12 +182,11 @@ class Main:
         return distance
 
     def run(self):
-        self.get_base_data()
+        number_of_refreshes = 0
         while True:
             self.refresh_player_data()
 
-            number_of_refreshes = 0
-            if number_of_refreshes * refresh_delay > refresh_base_data_timer:
+            if number_of_refreshes * refresh_delay > refresh_base_data_timer or number_of_refreshes >= 0:
                 self.get_base_data()
             print(self.find_out_of_town_players())
 
@@ -176,8 +196,11 @@ class Main:
             #print("\n\n-----------------------------")
 
             sleep(refresh_delay)
+            number_of_refreshes += 1
 
 
-main = Main(my_name="")
+plotting = Plotting()
+main = Main(my_name="", plotter=plotting)
 
-main.run()
+if __name__ == "__main__":
+    main.run()
