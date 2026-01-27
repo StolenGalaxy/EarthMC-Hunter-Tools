@@ -12,8 +12,8 @@ from multiprocessing import Process
 PLAYERS_ENDPOINT = "https://map.earthmc.net/tiles/players.json"
 MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.json"
 
-refresh_delay = 1
-player_activity_timeout = 60
+refresh_delay = 5
+player_activity_timeout = 30
 base_refresh_delay = 300
 
 
@@ -38,8 +38,6 @@ class Main:
         self.my_name = my_name
 
         self.already_plotted = False
-
-
 
         self.recent_players = {}  # Visible in short term
         self.logged_players = []  # Visible at any point
@@ -189,8 +187,34 @@ class Main:
             if distance < closest_spawn_distance:
                 closest_spawn_distance = distance
                 closest_spawn = nation_spawn
-        print("closest nation spawn is:", closest_spawn, "distance is:", closest_spawn_distance)
+        return (closest_spawn, closest_spawn_distance)
 
+    def find_nearest_nation_spawn_to_player(self, player_name) -> tuple[str, int]:
+        coords = self.recent_players[player_name].coords
+        closest_spawn = self.find_nearest_nation_spawn(coords)
+        return closest_spawn
+
+    def find_optimal_target_with_spawn(self) -> tuple[str, str]:
+        potential_targets = self.find_out_of_town_players()
+        if self.my_name in potential_targets:
+            potential_targets.remove(self.my_name)
+
+        shortest_distance = 999999
+        optimal_target = ""
+        closest_spawn = ""
+        player_coords = ""
+        for target in potential_targets:
+
+            closest_nation_spawn = self.find_nearest_nation_spawn_to_player(target)
+
+            distance = closest_nation_spawn[1]
+            if distance < shortest_distance:
+                shortest_distance = distance
+                optimal_target = target
+                closest_spawn = closest_nation_spawn[0]
+                player_coords = self.recent_players[target].coords
+
+        return (optimal_target, player_coords, closest_spawn, shortest_distance)
 
     def run(self):
         number_of_refreshes = 0
@@ -200,12 +224,14 @@ class Main:
             if number_of_refreshes * refresh_delay > base_refresh_delay or number_of_refreshes == 0:
                 self.get_base_data()
                 number_of_refreshes = 0
-            #print(self.find_out_of_town_players())
+
+            target_data = self.find_optimal_target_with_spawn()
+            print("-----------------------------\n\n")
+            print(f"Optimal target: {target_data[0]}\nCoordinates: ({target_data[1].X}, {target_data[1].Z})\nNearest nation spawn is {target_data[2]} which is {target_data[3]} blocks away")
+            print("\n\n-----------------------------")
 
 
-            #print("-----------------------------\n\n")
             #print(f"Currently visible players: {len(self.visible_players)}\nRecently visible players: {len(self.recent_players)}\nAll known players: {len(self.logged_players)}")
-            #print("\n\n-----------------------------")
 
             sleep(refresh_delay)
             number_of_refreshes += 1
