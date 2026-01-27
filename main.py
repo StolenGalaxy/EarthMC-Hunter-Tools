@@ -14,7 +14,7 @@ MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.js
 
 refresh_delay = 1
 player_activity_timeout = 60
-refresh_base_data_timer = 300
+base_refresh_delay = 300
 
 
 class Player:
@@ -38,6 +38,8 @@ class Main:
         self.my_name = my_name
 
         self.already_plotted = False
+
+        self.nation_spawns = {}
 
         self.recent_players = {}  # Visible in short term
         self.logged_players = []  # Visible at any point
@@ -75,7 +77,6 @@ class Main:
                     if self.recent_players[player_name].time_since_visible > player_activity_timeout:
                         self.recent_players.pop(player_name)
 
-
     def plot_map(self, map):
         fig, ax = plt.subplots()
 
@@ -86,9 +87,7 @@ class Main:
         ax.autoscale_view()
         plt.show()
 
-
     def get_base_data(self):
-        print("getting base data")
         response = get(MARKERS_ENDPOINT).json()
 
         towns = response[0]["markers"]
@@ -114,6 +113,13 @@ class Main:
                 self.towns_coords = towns_coords
 
                 map.append(visualisation_coords)
+            else:
+                nation_name = str(town["tooltip"]).split("(Capital of ")[1]
+                nation_name = (nation_name.split(")\n")[0]).strip()
+
+                nation_spawn_point = Coordinates(town["point"]["x"], 0, town["point"]["z"])
+
+                self.nation_spawns[nation_name] = nation_spawn_point
 
         if not self.already_plotted:
             self.already_plotted = True
@@ -175,9 +181,10 @@ class Main:
         while True:
             self.refresh_player_data()
 
-            if number_of_refreshes * refresh_delay > refresh_base_data_timer or number_of_refreshes == 0:
+            if number_of_refreshes * refresh_delay > base_refresh_delay or number_of_refreshes == 0:
                 self.get_base_data()
-            print(self.find_out_of_town_players())
+                number_of_refreshes = 0
+            #print(self.find_out_of_town_players())
 
 
             #print("-----------------------------\n\n")
