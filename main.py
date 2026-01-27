@@ -14,7 +14,7 @@ MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.js
 
 refresh_delay = 1
 player_activity_timeout = 60
-refresh_base_data_timer = 300
+refresh_base_data_timer = 0
 
 
 class Player:
@@ -33,34 +33,14 @@ class Coordinates:
         self.Z = Z
 
 
-class Plotting:
-    def __init__(self):
-        print("init called")
-        self.already_plotted = False
-
-    def plot_map(self, map):
-            fig, ax = plt.subplots()
-
-            collection = PolyCollection(map, facecolor="red", edgecolor="black")
-
-            ax.add_collection(collection)
-
-            ax.autoscale_view()
-            if self.already_plotted:
-                print("closing all")
-                plt.close("all")
-            self.already_plotted = True
-            plt.show()
-
-
 class Main:
-    def __init__(self, my_name: str, plotter: Plotting):
+    def __init__(self, my_name: str):
         self.my_name = my_name
 
+        self.already_plotted = False
 
         self.recent_players = {}  # Visible in short term
         self.logged_players = []  # Visible at any point
-
 
     def refresh_player_data(self) -> list:
         self.visible_players = []  # Visible right now
@@ -95,6 +75,18 @@ class Main:
                     if self.recent_players[player_name].time_since_visible > player_activity_timeout:
                         self.recent_players.pop(player_name)
 
+
+    def plot_map(self, map):
+        fig, ax = plt.subplots()
+
+        collection = PolyCollection(map, facecolor="red", edgecolor="black")
+
+        ax.add_collection(collection)
+
+        ax.autoscale_view()
+        plt.show()
+
+
     def get_base_data(self):
         print("getting base data")
         response = get(MARKERS_ENDPOINT).json()
@@ -123,13 +115,10 @@ class Main:
 
                 map.append(visualisation_coords)
 
-        print("about to plot")
-        plot_process = Process(target=self.plotter.plot_map, args=(map, ))
-        plot_process.start()
-        print("completed plot")
-
-
-
+        if not self.already_plotted:
+            self.already_plotted = True
+            plot_process = Process(target=self.plot_map, args=(map, ))
+            plot_process.start()
 
     def get_player_visibility_status(self, player_name):
         if player_name in self.visible_players:
@@ -186,7 +175,7 @@ class Main:
         while True:
             self.refresh_player_data()
 
-            if number_of_refreshes * refresh_delay > refresh_base_data_timer or number_of_refreshes >= 0:
+            if number_of_refreshes * refresh_delay > refresh_base_data_timer or number_of_refreshes == 0:
                 self.get_base_data()
             print(self.find_out_of_town_players())
 
@@ -199,8 +188,7 @@ class Main:
             number_of_refreshes += 1
 
 
-plotting = Plotting()
-main = Main(my_name="", plotter=plotting)
+main = Main(my_name="")
 
 if __name__ == "__main__":
     main.run()
