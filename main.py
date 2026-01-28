@@ -14,9 +14,9 @@ import pyperclip
 PLAYERS_ENDPOINT = "https://map.earthmc.net/tiles/players.json"
 MARKERS_ENDPOINT = "https://map.earthmc.net/tiles/minecraft_overworld/markers.json"
 
-refresh_delay = 5
-player_activity_timeout = 30
-base_refresh_delay = 300
+refresh_delay = 10
+player_activity_timeout = 15
+base_refresh_delay = 120
 
 
 class Player:
@@ -122,12 +122,13 @@ class Main:
                 blacklisted_nation_spawns = []
                 with open("blacklisted_spawns.csv", "r") as file:
                     for line in file:
-                        blacklisted_nation_spawns.append(line.strip())
+                        blacklisted_nation_spawns.append(line.strip().lower())
 
-                if nation_name not in blacklisted_nation_spawns:
-                    nation_spawn_point = Coordinates(town["point"]["x"], 0, town["point"]["z"])
+                if nation_name.lower() in blacklisted_nation_spawns:
+                    continue
 
-                    self.nation_spawns[nation_name] = nation_spawn_point
+                nation_spawn_point = Coordinates(town["point"]["x"], 0, town["point"]["z"])
+                self.nation_spawns[nation_name] = nation_spawn_point
 
         if not self.already_plotted:
             self.already_plotted = True
@@ -211,11 +212,22 @@ class Main:
         optimal_target = ""
         closest_spawn = ""
         player_coords = ""
+
+        blacklisted_players = []
+
+        with open("blacklisted_players.csv", "r") as file:
+            for line in file.readlines():
+                blacklisted_players.append(line.strip().lower())
+
         for target in potential_targets:
+
+            if target.lower() in blacklisted_players:
+                continue
 
             closest_nation_spawn = self.find_nearest_nation_spawn_to_player(target)
 
             distance = closest_nation_spawn[1]
+
             if distance < shortest_distance:
                 shortest_distance = distance
                 optimal_target = target
