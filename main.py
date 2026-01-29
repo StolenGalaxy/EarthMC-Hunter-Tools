@@ -132,8 +132,9 @@ class Main:
 
         if not self.already_plotted:
             self.already_plotted = True
-            plot_process = Process(target=self.plot_map, args=(map, ))
-            plot_process.start()
+            # uncomment to enable map
+            #plot_process = Process(target=self.plot_map, args=(map, ))
+            #plot_process.start()
 
     def get_player_visibility_status(self, player_name):
         if player_name in self.visible_players:
