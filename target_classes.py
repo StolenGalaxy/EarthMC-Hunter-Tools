@@ -83,7 +83,7 @@ class PlayerFinder:
         if "maximum_spawn_distance" in self.properties:
             check_maximum_spawn = True
         for player in available_players:
-            nearest_spawn, nearest_spawn_distance = self.calculator.find_nearest_nation_spawn_to_player(player)
+            nearest_spawn_distance = self.calculator.find_nearest_nation_spawn_to_player(player)[1]
 
             if check_minimum_spawn:
                 if nearest_spawn_distance < self.properties["minimum_spawn_distance"]:
@@ -97,6 +97,9 @@ class PlayerFinder:
         return available_players
 
     def run(self):
-        results = self.search_players()
+        valid_players = self.search_players()
 
-        print(results)
+        for i, player in enumerate(valid_players):
+            nearest_spawn, distance = self.calculator.find_nearest_nation_spawn_to_player(player)
+
+            print(f"Player #{i + 1}: {player} - Nearest spawn, {nearest_spawn}, is {distance} blocks away")
