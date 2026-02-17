@@ -67,8 +67,11 @@ class Calculator:
 
         for town in towns:
             if "points" in str(town):
-
-                border_points = town["points"][0][0]
+                border_points = []
+                border_point_subsets = town["points"]
+                for point_subset in border_point_subsets:
+                    for point in point_subset[0]:
+                        border_points.append(point)
 
                 town_coords = []
                 for point in border_points:
